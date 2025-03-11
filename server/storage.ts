@@ -102,12 +102,17 @@ export class MemStorage implements IStorage {
       checkPeriod: 86400000, // prune expired entries every 24h
     });
     
-    // Create default admin user
-    this.createUser({
+    // Create a default admin user with unhashed password
+    // The password will be hashed when the user logs in via comparePasswords
+    const adminUser: User = {
+      id: 1,
       username: "admin",
-      password: "adminpassword", // This will be hashed in the auth service
-      isAdmin: true,
-    });
+      password: "adminpassword",
+      isAdmin: true
+    };
+    
+    this.users.set(adminUser.id, adminUser);
+    console.log("Default admin user created successfully");
   }
 
   // Student operations
