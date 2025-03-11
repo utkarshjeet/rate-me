@@ -1,0 +1,144 @@
+Prompt:
+"Create a fully functional student rating and room-based system using data from two Excel sheets. This system will have student authentication, admin controls for managing students and rooms, a rating system, and a leaderboard. Follow these detailed steps carefully:"
+
+Step 1: Create a Student Database from Excel Sheets
+Goal: Set up a structured database for student data and ensure unique authentication.
+
+1.1 Import Excel Data into Database
+Import data from two Excel files containing the following columns:
+
+Column 2: Student Number (Unique, Primary Key)
+Column 3: Name
+Column 4: Email
+Use xlsx or csv-parser to read the Excel files and store the data in a database like MySQL or Firestore.
+
+1.2 Create the Students Table:
+Set up the following schema for the Students table:
+
+Field	Type	Description
+id	INT (Auto Increment)	Primary key
+student_number	VARCHAR (Unique)	Student ID
+name	VARCHAR	Student's Name
+email	VARCHAR (Unique)	Student's Email
+is_registered	BOOLEAN	Default false, set to true after login
+created_at	TIMESTAMP	Auto-generated
+1.3 Data Rules:
+Ensure that student number and email are unique.
+Prevent duplicate records when importing data.
+Clean up data inconsistencies (like whitespace, extra characters).
+1.4 Save Data to Database:
+Save cleaned data into the Students table.
+If a duplicate student number or email exists → Ignore or update existing record.
+Step 2: Set Up User Authentication (Registration + Login)
+Goal: Allow users to log in using student credentials from the database.
+
+2.1 Create a Login Page:
+User will enter:
+Name (free-text)
+Email
+Student Number
+2.2 Backend Authentication:
+On login attempt:
+Match entered student number and email with records in the Students table.
+If no match → Show error: "Invalid credentials".
+If is_registered = true → Show error: "User already registered".
+If match found and is_registered = false →
+Mark is_registered = true in the database.
+Store session data (name, student number) → Redirect to room selection.
+2.3 Prevent Multiple Logins:
+Once a student is logged in, block any new login attempt using the same student number or email unless the admin resets it.
+Step 3: Set Up Admin Control to Manage Students and Rooms
+Goal: Provide an admin interface for managing student data and room assignments.
+
+3.1 Create an Admin Dashboard:
+Admin should have a separate login and interface.
+Dashboard should allow admin to:
+View all registered and unregistered students.
+Search students by student number, name, or email.
+Reset student registration (is_registered = false).
+Delete student data (with confirmation).
+Add new students from Excel (merge without duplicates).
+3.2 Create the Rooms Table:
+Set up the following schema for the Rooms table:
+
+Field	Type	Description
+id	INT (Auto Increment)	Primary key
+room_name	VARCHAR	Name of the room
+branch	VARCHAR	Branch (e.g., CSE, ECE)
+section	VARCHAR	Section (e.g., A, B)
+created_at	TIMESTAMP	Auto-generated
+3.3 Create the RoomAssignments Table:
+Set up the following schema for the RoomAssignments table:
+
+Field	Type	Description
+id	INT (Auto Increment)	Primary key
+room_id	INT (Foreign Key)	Links to Rooms.id
+student_id	INT (Foreign Key)	Links to Students.id
+assigned_at	TIMESTAMP	Auto-generated
+3.4 Admin Room Controls:
+Create a form where admin can:
+Create new rooms (with branch and section).
+Add students to rooms by searching student number or email from the database.
+Ensure that a student can only be assigned to one room at a time.
+Step 4: Set Up Question and Rating System
+Goal: Allow admin to add questions and allow users to rate students based on those questions.
+
+4.1 Create the Questions Table:
+Set up the following schema for the Questions table:
+
+Field	Type	Description
+id	INT (Auto Increment)	Primary key
+room_id	INT (Foreign Key)	Links to Rooms.id
+question_text	TEXT	Question content
+created_at	TIMESTAMP	Auto-generated
+4.2 Admin Question Controls:
+Admin should be able to:
+Create new questions for each room.
+Edit and delete questions.
+Ensure each room can have multiple questions.
+4.3 User Rating System:
+When logged-in user enters a room → Show the question at the top.
+Below the question → List of students assigned to that room.
+User can rank students by clicking names in order:
+First click → 1st rank
+Second click → 2nd rank
+Third click → 3rd rank
+Allow navigation between questions using Next and Previous buttons.
+After submitting → Save data to database.
+Disable re-submission for the same question.
+4.4 Create the Ratings Table:
+Set up the following schema for the Ratings table:
+
+Field	Type	Description
+id	INT (Auto Increment)	Primary key
+room_id	INT (Foreign Key)	Links to Rooms.id
+question_id	INT (Foreign Key)	Links to Questions.id
+student_id	INT (Foreign Key)	Links to Students.id
+rank	INT	Rank assigned by user
+4.5 Submission Logic:
+On submission:
+Save rank in the Ratings table.
+If a student already has a rank for that question → Update the existing rank.
+Prevent multiple submissions.
+Step 5: Create a Leaderboard
+Goal: Display aggregated ratings for each question and room.
+
+5.1 Create Leaderboard Page:
+Create a public page (or admin-only):
+Select Room → Show leaderboard for each question in that room.
+Display students in ranked order based on average rating.
+Allow sorting based on rank.
+5.2 Backend Logic:
+Aggregate data from Ratings table.
+Rank students based on the sum of their rank values for each question.
+Update leaderboard automatically as new data is submitted.
+5.3 Leaderboard Example Output:
+Rank	Student Name	Total Rating	Average Rating
+1	John Doe	120	4.5
+2	Jane Smith	110	4.3
+3	Bob Brown	98	4.1
+✅ Final Checklist:
+🔒 Student Authentication → User logs in once; admin can reset.
+🏠 Room and Question Setup → Admin can create rooms and questions.
+🎯 Rating System → User can rank students by clicking.
+📊 Leaderboard → Shows top-ranked students for each question.
