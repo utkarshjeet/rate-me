@@ -208,6 +208,27 @@ export default function StudentRating() {
   // Current question
   const currentQuestion = questions[currentQuestionIndex];
 
+  // Safety check to ensure there's at least one question available
+  if (!currentQuestion) {
+    return (
+      <StudentLayout 
+        title={room?.roomName || "Room"} 
+        showBackButton={true}
+      >
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-8">
+              <h2 className="text-xl font-medium text-gray-900 mb-2">No Question Available</h2>
+              <p className="text-gray-600">
+                The selected question cannot be found. Please try again later or contact an administrator.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </StudentLayout>
+    );
+  }
+
   return (
     <StudentLayout 
       title={room?.roomName || "Room"} 

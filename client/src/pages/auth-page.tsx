@@ -71,7 +71,7 @@ export default function AuthPage() {
       <Card className="w-full max-w-md mx-auto">
         <Tabs defaultValue="student" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="student">Student Login</TabsTrigger>
+            <TabsTrigger value="student">Student Access</TabsTrigger>
             <TabsTrigger value="admin">Admin Login</TabsTrigger>
           </TabsList>
           
@@ -118,7 +118,10 @@ function StudentLoginForm({
     <CardContent className="pt-6">
       <div className="text-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Student Rating System</h1>
-        <p className="text-gray-600 mt-2">Sign in with your student credentials</p>
+        <p className="text-gray-600 mt-2">Enter your details to access the system</p>
+        <div className="mt-2 text-sm text-gray-500">
+          <span className="bg-green-100 text-green-800 px-2 py-1 rounded mr-1">First time?</span> You'll be registered automatically
+        </div>
       </div>
 
       <Form {...form}>

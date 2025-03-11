@@ -91,18 +91,17 @@ export function setupAuth(app: Express) {
         return done(null, false, { message: "Invalid email address" });
       }
       
-      if (student.isRegistered) {
-        return done(null, false, { message: "Student already registered" });
-      }
-      
       // Check if name matches (case insensitive)
       const providedName = req.body.name;
       if (!providedName || providedName.toLowerCase() !== student.name.toLowerCase()) {
         return done(null, false, { message: "Invalid name" });
       }
       
-      // Mark student as registered
-      await storage.updateStudent(student.id, { isRegistered: true });
+      // For already registered students, just log them in without changing status
+      if (!student.isRegistered) {
+        // This is a first-time login, so mark student as registered
+        await storage.updateStudent(student.id, { isRegistered: true });
+      }
       
       req.student = student;
       return done(null, student);
