@@ -45,15 +45,24 @@ const adminLoginSchema = z.object({
 type AdminLoginFormValues = z.infer<typeof adminLoginSchema>;
 
 export default function AuthPage() {
-  const { user, loginStudent, loginAdmin } = useAuth();
+  const { user, loginStudent, loginAdmin, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("student");
+
+  // Show loading indicator while authentication status is being determined
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 md:p-6 bg-gray-50">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   // If already logged in, redirect to appropriate dashboard
   if (user) {
     if (user.type === "admin") {
       return <Redirect to="/admin" />;
     } else {
-      return <Redirect to="/" />;
+      return <Redirect to="/student" />;
     }
   }
 

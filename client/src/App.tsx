@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import { ProtectedRoute } from "@/lib/protected-route";
-import { AuthProvider } from "@/hooks/use-auth";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
 
 // Student pages
 import StudentRooms from "@/pages/student/rooms";
@@ -25,10 +25,19 @@ function Router() {
       {/* Auth page */}
       <Route path="/auth" component={AuthPage} />
 
-      {/* Root redirect to auth page */}
-      <Route path="/">
-        {() => <Redirect to="/auth" />}
-      </Route>
+      {/* Root path - redirect based on user type */}
+      <ProtectedRoute 
+        path="/" 
+        component={() => {
+          const { user } = useAuth();
+          if (user?.type === "admin") {
+            return <Redirect to="/admin" />;
+          } else if (user?.type === "student") {
+            return <Redirect to="/student" />;
+          }
+          return <Redirect to="/auth" />;
+        }} 
+      />
 
       {/* Student routes */}
       <ProtectedRoute path="/student" userType="student" component={StudentRooms} />
