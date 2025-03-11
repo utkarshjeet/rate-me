@@ -30,7 +30,8 @@ export const users = pgTable("users", {
 
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
-  isAdmin: true,
+}).extend({
+  isAdmin: z.boolean().default(false).optional(),
 });
 
 export const loginSchema = z.object({

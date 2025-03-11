@@ -9,7 +9,14 @@ import { Student, User } from "@shared/schema";
 
 declare global {
   namespace Express {
-    interface User extends User {} // Admin users
+    // Define the User interface for authentication
+    interface User {
+      id: number;
+      username: string;
+      password: string;
+      isAdmin: boolean;
+    }
+    
     interface Request {
       student?: Student; // Students have a separate auth flow
     }
@@ -25,10 +32,16 @@ export async function hashPassword(password: string) {
 }
 
 export async function comparePasswords(supplied: string, stored: string) {
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
+  // Check if the password is hashed (contains a salt part)
+  if (stored.includes('.')) {
+    const [hashed, salt] = stored.split(".");
+    const hashedBuf = Buffer.from(hashed, "hex");
+    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+    return timingSafeEqual(hashedBuf, suppliedBuf);
+  } else {
+    // If password is not hashed yet (direct comparison for default admin)
+    return supplied === stored;
+  }
 }
 
 export function setupAuth(app: Express) {
