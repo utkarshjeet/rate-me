@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, hashPassword } from "./auth";
-import { extractStudentsFromExcel } from "./excelParser";
+import { extractStudentsFromExcel, importPredefinedExcelFiles } from "./excelParser";
 import multer from "multer";
 import { z } from "zod";
 import {

@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { importPredefinedExcelFiles } from "./excelParser";
+import { storage } from "./storage";
 
 const app = express();
 app.use(express.json());
@@ -46,6 +48,19 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
     throw err;
   });
+
+  // Import students from predefined Excel files
+  try {
+    log("Importing students from predefined Excel files...");
+    const importResult = await importPredefinedExcelFiles(storage);
+    if (importResult.totalImported > 0) {
+      log(`Successfully imported ${importResult.totalImported} students from ${importResult.filesProcessed.join(', ')}`);
+    } else {
+      log("No new students imported from Excel files");
+    }
+  } catch (error) {
+    log(`Error importing students from Excel files: ${error}`);
+  }
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route

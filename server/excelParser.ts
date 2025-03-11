@@ -1,80 +1,39 @@
 import * as fs from 'fs';
+import { promises as fsPromises } from 'fs';
 import * as path from 'path';
 import { InsertStudent } from '@shared/schema';
+import * as XLSX from 'xlsx';
 
-interface ExcelRow {
-  [key: string]: any;
-}
-
-// Simple function to parse CSV content
-function parseCSV(content: string): ExcelRow[] {
-  const lines = content.split('\n');
-  if (lines.length < 1) return [];
-  
-  // Try to detect if there's a header row
-  const firstLine = lines[0].split(',').map(val => val.trim());
-  const hasHeaders = firstLine.some(val => 
-    ['student number', 'name', 'email', 'id', 'roll'].some(header => 
-      val.toLowerCase().includes(header)
-    )
-  );
-  
-  const rows: ExcelRow[] = [];
-  
-  if (hasHeaders) {
-    // If we have headers, process normally
-    const headers = firstLine;
-    
-    for (let i = 1; i < lines.length; i++) {
-      if (!lines[i].trim()) continue;
-      
-      const values = lines[i].split(',').map(val => val.trim());
-      const row: ExcelRow = {};
-      
-      headers.forEach((header, index) => {
-        row[header] = values[index] || '';
-      });
-      
-      rows.push(row);
-    }
-  } else {
-    // If no headers, use column indices as keys
-    for (let i = 0; i < lines.length; i++) {
-      if (!lines[i].trim()) continue;
-      
-      const values = lines[i].split(',').map(val => val.trim());
-      const row: ExcelRow = {};
-      
-      // Create keys by index
-      values.forEach((val, index) => {
-        row[`col${index}`] = val;
-      });
-      
-      rows.push(row);
-    }
-  }
-  
-  return rows;
-}
-
-// Function to extract student data from Excel (CSV) rows
+// Function to extract student data from Excel files using xlsx library
 export function extractStudentsFromExcel(fileBuffer: Buffer): InsertStudent[] {
   try {
-    const content = fileBuffer.toString('utf-8');
-    const rows = parseCSV(content);
+    // Parse the Excel file using xlsx
+    const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
     
-    // For header-based Excel files (with named columns)
-    if (rows.length > 0 && (rows[0]['Student Number'] || rows[0]['student_number'] || rows[0]['Name'] || rows[0]['name'])) {
-      return rows
-        .filter(row => {
-          // Ensure we have student number, name, and email
-          const hasStudentNumber = row['Student Number'] || row['student_number'] || '';
-          const hasName = row['Name'] || row['name'] || '';
-          const hasEmail = row['Email'] || row['email'] || '';
+    // Convert to JSON
+    const data = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+    
+    // Check if this is a header-based Excel file (has standard column names)
+    const hasStandardHeader = data.length > 0 && (
+      'Student Number' in data[0] || 
+      'student_number' in data[0] || 
+      'Name' in data[0] ||
+      'name' in data[0]
+    );
+    
+    if (hasStandardHeader) {
+      // For header-based Excel files with standard column names
+      return data
+        .filter((row: any) => {
+          const studentNumber = row['Student Number'] || row['student_number'] || '';
+          const name = row['Name'] || row['name'] || '';
+          const email = row['Email'] || row['email'] || '';
           
-          return hasStudentNumber && hasName && hasEmail;
+          return studentNumber && name && email;
         })
-        .map(row => {
+        .map((row: any) => {
           const studentNumber = (row['Student Number'] || row['student_number'] || '').toString().trim();
           const name = (row['Name'] || row['name'] || '').toString().trim();
           const email = (row['Email'] || row['email'] || '').toString().trim();
@@ -86,27 +45,30 @@ export function extractStudentsFromExcel(fileBuffer: Buffer): InsertStudent[] {
             isRegistered: false
           };
         });
-    } 
-    // For position-based Excel files (without headers, or with non-standard headers)
-    else {
-      return rows
-        .filter(row => {
-          // Extract values by position - column 2 (index 1) for student number and column 4 (index 3) for email
-          // We need at least these two fields to have values
-          const values = Object.values(row);
-          if (values.length < 4) return false;
-          
-          const studentNumber = values[1]?.toString().trim();
-          const email = values[3]?.toString().trim();
-          
-          return studentNumber && email;
+    } else {
+      // Position-based format (using column indices from our Excel file format)
+      // Get data as array of arrays to access by position
+      const dataArray = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+      
+      // Skip header row if it exists
+      const startRow = dataArray.length > 0 && 
+                      Array.isArray(dataArray[0]) && 
+                      dataArray[0].some(cell => 
+                        typeof cell === 'string' && 
+                        cell.toLowerCase().includes('student')) ? 1 : 0;
+      
+      return dataArray
+        .slice(startRow)
+        .filter((row: any) => {
+          // Column B (index 1) for student number and column D (index 3) for email
+          if (!Array.isArray(row) || row.length < 4) return false;
+          return row[1] && row[3]; // Student number and email must exist
         })
-        .map(row => {
-          const values = Object.values(row);
-          const studentNumber = values[1].toString().trim();
-          // For name, use column 3 (index 2) if available, or use column 1 (index 0) as fallback
-          const name = (values[2] || values[0] || '').toString().trim();
-          const email = values[3].toString().trim();
+        .map((row: any) => {
+          const studentNumber = row[1].toString().trim();
+          // For name, use column C (index 2) if available, or column A (index 0) as fallback
+          const name = (row[2] || row[0] || '').toString().trim();
+          const email = row[3].toString().trim();
           
           return {
             studentNumber,
@@ -120,4 +82,54 @@ export function extractStudentsFromExcel(fileBuffer: Buffer): InsertStudent[] {
     console.error('Error parsing Excel file:', error);
     return [];
   }
+}
+
+// Function to load and process the pre-defined Excel files
+export async function importPredefinedExcelFiles(storage: any): Promise<{
+  totalImported: number;
+  filesProcessed: string[];
+}> {
+  const excelFiles = [
+    'attached_assets/1st year mail IDs.xlsx',
+    'attached_assets/to email 2nd slot 1st year email id creation information.xlsx'
+  ];
+  
+  let totalImported = 0;
+  const filesProcessed: string[] = [];
+  
+  for (const filePath of excelFiles) {
+    try {
+      console.log(`Importing Excel file: ${filePath}`);
+      const fileBuffer = await fsPromises.readFile(filePath);
+      const students = extractStudentsFromExcel(fileBuffer);
+      
+      if (students.length > 0) {
+        let importedCount = 0;
+        
+        // Process each student
+        for (const student of students) {
+          try {
+            // Check if student already exists
+            const existingStudent = await storage.getStudentByNumber(student.studentNumber);
+            if (!existingStudent) {
+              await storage.createStudent(student);
+              importedCount++;
+            }
+          } catch (err) {
+            console.error(`Error importing student: ${student.studentNumber}`, err);
+          }
+        }
+        
+        totalImported += importedCount;
+        filesProcessed.push(path.basename(filePath));
+        console.log(`Imported ${importedCount} students from ${filePath}`);
+      } else {
+        console.log(`No valid student data found in ${filePath}`);
+      }
+    } catch (err) {
+      console.error(`Error processing Excel file: ${filePath}`, err);
+    }
+  }
+  
+  return { totalImported, filesProcessed };
 }
