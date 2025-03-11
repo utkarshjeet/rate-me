@@ -59,7 +59,7 @@ export default function AddQuestionModal({
   const form = useForm<InsertQuestion>({
     resolver: zodResolver(insertQuestionSchema),
     defaultValues: {
-      roomId: 0,
+      roomId: isEditMode && question ? question.roomId : (rooms[0]?.id || 1),
       questionText: "",
     },
   });
@@ -71,13 +71,13 @@ export default function AddQuestionModal({
         roomId: question.roomId,
         questionText: question.questionText,
       });
-    } else {
+    } else if (rooms && rooms.length > 0) {
       form.reset({
-        roomId: 0,
+        roomId: rooms[0].id, // Default to first room instead of 0
         questionText: "",
       });
     }
-  }, [isEditMode, question, form]);
+  }, [isEditMode, question, form, rooms]);
   
   const addQuestionMutation = useMutation({
     mutationFn: async (data: InsertQuestion) => {
