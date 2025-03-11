@@ -59,9 +59,10 @@ export default function AddQuestionModal({
   const form = useForm<InsertQuestion>({
     resolver: zodResolver(insertQuestionSchema),
     defaultValues: {
-      roomId: isEditMode && question ? question.roomId : (rooms[0]?.id || 1),
+      roomId: isEditMode && question ? question.roomId : (rooms[0]?.id || 0),
       questionText: "",
     },
+    mode: "onChange",
   });
   
   // Set form values when editing a question
@@ -157,8 +158,8 @@ export default function AddQuestionModal({
                   <FormLabel>Select Room</FormLabel>
                   <Select
                     onValueChange={(value) => field.onChange(parseInt(value))}
-                    defaultValue={field.value.toString()}
-                    value={field.value.toString()}
+                    defaultValue={field.value ? field.value.toString() : "default"}
+                    value={field.value ? field.value.toString() : "default"}
                   >
                     <FormControl>
                       <SelectTrigger>
