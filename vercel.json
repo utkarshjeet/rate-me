@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "dist/index.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "dist/public/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/assets/(.*)",
+      "dest": "/dist/public/assets/$1"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/dist/public/favicon.ico"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/dist/index.js"
+    }
+  ],
+  "build": "npm run build"
+}
