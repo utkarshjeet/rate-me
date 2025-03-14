@@ -1,28 +1,26 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "dist/index.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "dist/public/**",
-      "use": "@vercel/static"
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": null,
+  "functions": {
+    "dist/index.js": {
+      "memory": 1024,
+      "maxDuration": 10
     }
-  ],
+  },
   "routes": [
     {
       "src": "/assets/(.*)",
       "dest": "/dist/public/assets/$1"
     },
     {
-      "src": "/favicon.ico",
-      "dest": "/dist/public/favicon.ico"
+      "src": "/(favicon\\.ico|robots\\.txt|sitemap\\.xml)",
+      "dest": "/dist/public/$1"
     },
     {
       "src": "/(.*)",
       "dest": "/dist/index.js"
     }
-  ],
-  "build": "npm run build"
+  ]
 }
